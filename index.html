@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tailor.io - AI Textile Quality Inspector</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: var(--primary-color);
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 5rem 0;
+            margin-bottom: 3rem;
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .hero-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .main-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+            margin-bottom: 2rem;
+        }
+        
+        .main-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            background-color: var(--secondary-color);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+        
+        .btn-outline-primary {
+            color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .image-upload-container {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: white;
+            margin-bottom: 1.5rem;
+        }
+        
+        .image-upload-container:hover {
+            border-color: var(--secondary-color);
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .analysis-results {
+            background-color: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            margin-top: 2rem;
+            display: none;
+        }
+        
+        .result-item {
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .defect-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        
+        .critical {
+            background-color: var(--accent-color);
+        }
+        
+        .minor {
+            background-color: #f39c12;
+        }
+        
+        .good {
+            background-color: #2ecc71;
+        }
+        
+        .feature-card {
+            text-align: center;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            background-color: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            color: var(--secondary-color);
+            margin-bottom: 1rem;
+        }
+        
+        footer {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 3rem 0;
+            margin-top: 5rem;
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            margin: 2rem 0;
+        }
+        
+        .defect-visualization {
+            height: 300px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .defect-marker {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            transform: translate(-50%, -50%);
+        }
+        
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.2rem;
+            }
+            
+            .hero-subtitle {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="tailor_logo2.jpg" alt="Tailor.io Logo" height="40" class="me-2">
+                <span>Tailor.io – Smart Textile Inspector</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#aboutModal">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#futurePlanModal">Future Plan</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#contactModal">Contact</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- About Modal -->
+    <div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: var(--secondary-color); color: white;">
+                    <h5 class="modal-title" id="aboutModalLabel">🔹 About Tailor.io</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <h6 class="fw-bold">About Tailor.io</h6>
+                        <p>Tailor.io is an AI-powered textile inspection platform created to empower small and medium-scale garment manufacturers (MSMEs). We eliminate the need for costly supervisors by automating the quality control process through image analysis, machine learning, and multilingual chatbot support.</p>
+                        <p class="fw-bold">Our mission is to help MSMEs move forward with world-class quality standards—because good standards bring great buyers.</p>
+                        
+                        <h6 class="fw-bold mt-3">Highlights:</h6>
+                        <ul class="list-unstyled">
+                            <li>📸 Upload or snap fabric images instantly</li>
+                            <li>🔍 Detect defects using YOLO-based ML models</li>
+                            <li>💬 Get guidance via multilingual chatbot</li>
+                            <li>📥 Auto-generate audit-ready CSV/PDF reports</li>
+                            <li>📈 Improve compliance with ISO/SA8000 standards</li>
+                            <li>🛠️ Built for MSMEs by students & mentors at Sakthi Hackathon 2025</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="fw-bold">🔹 Our Team</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title">👨‍🏫 Manikandan Rangasamy</h6>
+                                        <p class="card-subtitle mb-2 text-muted">Project Mentor</p>
+                                        <p class="card-text small">Assistant Professor, Corporate Trainer & Innovation Coach. Guided the team through technical mentorship and industry alignment.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title">👩‍💻 Pooja</h6>
+                                        <p class="card-subtitle mb-2 text-muted">Lead Developer</p>
+                                        <p class="card-text small">Front-end and defect detection integration specialist. Handled major coding and deployment responsibilities.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title">👨‍💻 Thanigai</h6>
+                                        <p class="card-subtitle mb-2 text-muted">Assistant Developer</p>
+                                        <p class="card-text small">Supported the backend and helped integrate microservices and user interface flow.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title">👨‍🔧 Nithish</h6>
+                                        <p class="card-subtitle mb-2 text-muted">Solution Architect</p>
+                                        <p class="card-text small">Helped define the system architecture, workflow planning, and testing structure.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title">👩‍🔧 Vibusana</h6>
+                                        <p class="card-subtitle mb-2 text-muted">System Design & UX</p>
+                                        <p class="card-text small">Focused on visual UX structure and presentation flow of the tool, especially for MSME usability.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Modal -->
+    <div class="modal fade" id="contactModal" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #28a745, #20c997); color: white;">
+                    <h5 class="modal-title" id="contactModalLabel">📞 Contact Us</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <p class="lead">Have questions, suggestions, or want to collaborate with us? We'd love to hear from you. Reach out anytime — our team is just a message away.</p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-3">📞 Contact Information</h6>
+                            
+                            <div class="mb-3">
+                                <h6 class="fw-bold">Phone:</h6>
+                                <p class="mb-1">📞 <a href="tel:+918838179210" class="text-decoration-none">+91 8838179210</a></p>
+                                <small class="text-muted">(Available Mon–Sat, 9 AM – 6 PM IST)</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h6 class="fw-bold">Email:</h6>
+                                <p>📧 <a href="mailto:manikandanr@esec.ac.in" class="text-decoration-none">manikandanr@esec.ac.in</a></p>
+                                <small class="text-muted">(Mentor/Partnerships)</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h6 class="fw-bold">Office Address:</h6>
+                                <p class="mb-0">🏢 <strong>Tailor.io Innovations,</strong><br>
+                                ESEC Incubation Center, Perundurai,<br>
+                                Erode, Tamil Nadu – 638052, India.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-3">📨 Quick Contact Form</h6>
+                            <form id="contactForm">
+                                <div class="mb-3">
+                                    <label for="contactName" class="form-label">Name</label>
+                                    <input type="text" class="form-control" id="contactName" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="contactEmail" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="contactEmail" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="contactMessage" class="form-label">Message</label>
+                                    <textarea class="form-control" id="contactMessage" rows="4" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="fas fa-paper-plane me-2"></i>Send Message
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Future Plan Modal -->
+    <div class="modal fade" id="futurePlanModal" tabindex="-1" aria-labelledby="futurePlanModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white;">
+                    <div>
+                        <h5 class="modal-title" id="futurePlanModalLabel">🗂️ Future Plan</h5>
+                        <p class="mb-0 small opacity-75">Scaling AI-Powered Textile Inspection for Tomorrow</p>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <h4 class="fw-bold">Our Vision for the Future</h4>
+                        <p class="lead">At Tailor.io, we believe every MSME deserves access to world-class inspection tools. Our journey has just begun. Here's how we plan to elevate the future of textile quality control.</p>
+                    </div>
+                    
+                    <div class="row">
+                        <!-- Phase 1 -->
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0">1️⃣ Phase 1 – MSME Pilot Program</h6>
+                                    <small>(2025-2026)</small>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        <li>• Onboard 100+ MSMEs across Tamil Nadu</li>
+                                        <li>• Collect real-time feedback from factories</li>
+                                        <li>• Customize model accuracy based on textile types</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Phase 2 -->
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 border-success">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0">2️⃣ Phase 2 – AI Model Enhancement</h6>
+                                    <small>(2026)</small>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        <li>• Improve YOLO model accuracy with larger textile dataset</li>
+                                        <li>• Integrate predictive defect forecasting</li>
+                                        <li>• Enable voice-based inspection for visually challenged operators</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Phase 3 -->
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0">3️⃣ Phase 3 – Global Language Support</h6>
+                                    <small>(2026-2027)</small>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        <li>• Launch chatbot in 10+ regional Indian languages</li>
+                                        <li>• Add French, Spanish & Mandarin for export-oriented units</li>
+                                        <li>• Smart auto-translate in audit reports</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Phase 4 -->
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 border-info">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0">4️⃣ Phase 4 – ERP Integration</h6>
+                                    <small>(2027)</small>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        <li>• Sync Tailor.io with popular MSME ERP solutions</li>
+                                        <li>• Enable seamless work order → inspection → report flow</li>
+                                        <li>• API support for quality dashboards</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Phase 5 -->
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 border-danger">
+                                <div class="card-header bg-danger text-white">
+                                    <h6 class="mb-0">5️⃣ Phase 5 – Certification & Govt. Collaboration</h6>
+                                    <small>(2027+)</small>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled">
+                                        <li>• Partner with SIDBI, NSIC, and MSME Development Institutes</li>
+                                        <li>• Offer Smart QMS Kit for subsidies & grants</li>
+                                        <li>• Provide third-party audit-ready certifications</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <p class="lead fst-italic">We're stitching together a future where AI, quality, and compliance are accessible to every garment unit—no matter how small.</p>
+                        <button class="btn btn-lg btn-primary">
+                            🔮 Join Our Future – Be a Beta Partner
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1 class="hero-title">Textile Quality Inspection</h1>
+            <p class="hero-subtitle">Your AI Supervisor in Your Pocket. Detect defects, guide standards, and generate reports — all from your phone.</p>
+            <a href="#analysis-section" class="btn btn-light btn-lg mt-3">Start Inspection</a>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Features Section -->
+        <div class="row mb-5">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <h4>📸 Real-time Image Inspection</h4>
+                    <p>Capture textile images directly from your camera with real-time processing and instant analysis.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h4>🧠 AI-Powered Root Cause Analysis</h4>
+                    <p>Advanced machine learning algorithms identify defects and provide detailed root cause analysis.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h4>💬 Voice + Multilingual Chatbot</h4>
+                    <p>Interactive voice assistant and multilingual support for global textile operations.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Additional Features Row -->
+        <div class="row mb-5">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <h4>📝 Automated Audit Report Generation</h4>
+                    <p>Generate comprehensive audit reports automatically with detailed findings and recommendations.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h4>📊 Worker Performance Insights</h4>
+                    <p>Track and analyze worker performance metrics to improve overall quality control processes.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h4>🔐 Data Security & Scalable Cloud Backend</h4>
+                    <p>Enterprise-grade security with scalable cloud infrastructure for seamless operations.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Section -->
+        <div id="analysis-section" class="card main-card">
+            <div class="card-header">
+                Textile Image Analysis
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="image-upload-container" id="upload-container">
+                            <i class="fas fa-image fa-3x mb-3" style="color: var(--secondary-color);"></i>
+                            <h4>Let’s Inspect the Stitch!</h4>
+                            <p class="text-muted">Click to capture from camera or select from gallery</p>
+                            <input type="file" id="image-input" accept="image/*" capture="environment" style="display: none;">
+                            <img id="preview-image" class="preview-image" alt="Textile preview will appear here">
+                        </div>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                            <button class="btn btn-primary me-md-2" id="camera-btn">
+                                <i class="fas fa-camera me-1"></i> Snap Fabric
+                            </button>
+                            <button class="btn btn-outline-primary" id="gallery-btn">
+                                <i class="fas fa-folder-open me-1"></i> Pick a Photo
+                            </button>
+                        </div>
+                        <button class="btn btn-danger w-100 mt-3" id="analyze-btn" disabled>
+                            <i class="fas fa-search me-1"></i> Detect Defects
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="loading-spinner" id="loading-spinner">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Analyzing textile image...</p>
+                        </div>
+                        <div class="analysis-results" id="analysis-results">
+                            <h4 class="mb-4">Analysis Results</h4>
+                            
+                            <div class="result-item">
+                                <h6>General Information</h6>
+                                <p id="general-info">-</p>
+                            </div>
+                            
+                            <div class="result-item">
+                                <h6>Defect Overview</h6>
+                                <p id="defect-overview">-</p>
+                            </div>
+                            
+                            <div class="result-item">
+                                <h6>Color Analysis</h6>
+                                <p id="color-analysis">-</p>
+                            </div>
+                            
+                            <div class="result-item">
+                                <h6>Pattern Consistency</h6>
+                                <p id="pattern-consistency">-</p>
+                            </div>
+                            
+                            <div class="result-item">
+                                <h6>Detected Defects</h6>
+                                <div id="defects-list"></div>
+                            </div>
+                            
+                            <div class="result-item">
+                                <h6>Defect Visualization</h6>
+                                <div class="defect-visualization" id="defect-visualization">
+                                    <img id="analyzed-image" src="" alt="Analyzed textile with defect markers" style="width: 100%; height: 100%; object-fit: contain; display: none;">
+                                </div>
+                            </div>
+                            
+                            <button class="btn btn-outline-secondary w-100 mt-3" id="save-report-btn">
+                                <i class="fas fa-download me-1"></i> Download Full Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5>🧵 Tailor.io – Smart Textile Inspector</h5>
+                    <p>Precision AI-powered textile inspection tailored for MSMEs, quality analysts, and factory owners. Enabling zero-defect production and audit-ready compliance in just a click.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>🔗 Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-white">Dashboard</a></li>
+                        <li><a href="#" class="text-white">Features</a></li>
+                        <li><a href="#" class="text-white">Compliance Tools</a></li>
+                        <li><a href="#" class="text-white">Support</a></li>
+                        <li><a href="#" class="text-white">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>📬 Contact Us</h5>
+                    <p><i class="fas fa-envelope me-2"></i> manikandanr@esec.ac.in</p>
+                    <p><i class="fas fa-phone me-2"></i> +91 8838179210</p>
+                    <p><i class="fas fa-globe me-2"></i> <a href="https://qa-projrct.netlify.app/#" class="text-white">qa-projrct.netlify.app</a></p>
+                </div>
+            </div>
+            <hr class="my-4 bg-light">
+            <div class="text-center">
+                <p class="mb-2">🚀 <strong>Empowering Fabric Futures — One Scan at a Time.</strong></p>
+                <p>&copy; 2025 Tailor.io. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadContainer = document.getElementById('upload-container');
+            const imageInput = document.getElementById('image-input');
+            const previewImage = document.getElementById('preview-image');
+            const analyzeBtn = document.getElementById('analyze-btn');
+            const analysisResults = document.getElementById('analysis-results');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const cameraBtn = document.getElementById('camera-btn');
+            const galleryBtn = document.getElementById('gallery-btn');
+            const defectVisualization = document.getElementById('defect-visualization');
+            const analyzedImage = document.getElementById('analyzed-image');
+            
+            // Event listeners for image upload
+            uploadContainer.addEventListener('click', function() {
+                imageInput.click();
+            });
+            
+            cameraBtn.addEventListener('click', function() {
+                imageInput.setAttribute('capture', 'environment');
+                imageInput.click();
+            });
+            
+            galleryBtn.addEventListener('click', function() {
+                imageInput.removeAttribute('capture');
+                imageInput.click();
+            });
+            
+            imageInput.addEventListener('change', function(e) {
+                if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(event) {
+                        previewImage.src = event.target.result;
+                        previewImage.style.display = 'block';
+                        analyzeBtn.disabled = false;
+                        
+                        // Update upload container text
+                        uploadContainer.querySelector('h4').textContent = 'Image Uploaded – Let\'s Inspect the Stitch!';
+                        uploadContainer.querySelector('p').textContent = 'Ready for analysis';
+                    }
+                    
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+            
+            // Analyze button functionality
+            analyzeBtn.addEventListener('click', function() {
+                if (!previewImage.src || previewImage.src === '') {
+                    alert('Please upload an image first!');
+                    return;
+                }
+                
+                // Show loading spinner
+                loadingSpinner.style.display = 'block';
+                analysisResults.style.display = 'none';
+                
+                // Simulate analysis process
+                setTimeout(function() {
+                    loadingSpinner.style.display = 'none';
+                    analysisResults.style.display = 'block';
+                    
+                    // Set analyzed image
+                    analyzedImage.src = previewImage.src;
+                    analyzedImage.style.display = 'block';
+                    
+                    // Generate random analysis results (in a real app, this would come from an API)
+                    generateRandomResults();
+                }, 3000);
+            });
+            
+            // Save report button functionality
+            document.getElementById('save-report-btn').addEventListener('click', function() {
+                alert('Report generated and downloaded successfully!');
+                // In a real app, this would generate a PDF or CSV report
+            });
+            
+            // Contact form functionality
+            document.getElementById('contactForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const name = document.getElementById('contactName').value;
+                const email = document.getElementById('contactEmail').value;
+                const message = document.getElementById('contactMessage').value;
+                
+                if (name && email && message) {
+                    alert('Thank you for your message! We will get back to you soon.');
+                    // Reset form
+                    document.getElementById('contactForm').reset();
+                    // Close modal
+                    const contactModal = bootstrap.Modal.getInstance(document.getElementById('contactModal'));
+                    contactModal.hide();
+                } else {
+                    alert('Please fill in all fields.');
+                }
+            });
+            
+            // Function to generate random analysis results for demo purposes
+            function generateRandomResults() {
+                const defects = [
+                    { type: 'Color Variation', severity: 'minor', location: 'Top right corner' },
+                    { type: 'Thread Misalignment', severity: 'critical', location: 'Center' },
+                    { type: 'Small Stain', severity: 'minor', location: 'Bottom left' },
+                    { type: 'Pilling', severity: 'minor', location: 'Various locations' }
+                ];
+                
+                const colors = ['Blue', 'Red', 'White', 'Black'];
+                const patterns = ['Striped', 'Geometric', 'Floral', 'Solid'];
+                const materials = ['Cotton', 'Polyester', 'Silk', 'Wool'];
+                
+                // Set general information
+                document.getElementById('general-info').innerHTML = `
+                    Material: ${materials[Math.floor(Math.random() * materials.length)]}<br>
+                    Dimensions: ${(Math.random() * 200 + 100).toFixed(2)} cm × ${(Math.random() * 150 + 80).toFixed(2)} cm<br>
+                    Weight: ${(Math.random() * 300 + 100).toFixed(2)} g/m²
+                `;
+                
+                // Set defect overview
+                const criticalDefects = defects.filter(d => d.severity === 'critical').length;
+                const minorDefects = defects.filter(d => d.severity === 'minor').length;
+                document.getElementById('defect-overview').innerHTML = `
+                    <span class="defect-indicator critical"></span> Critical defects: ${criticalDefects}<br>
+                    <span class="defect-indicator minor"></span> Minor defects: ${minorDefects}<br>
+                    <span class="defect-indicator good"></span> Overall quality: ${criticalDefects > 0 ? 'Needs Review' : (minorDefects > 2 ? 'Fair' : 'Good')}
+                `;
+                
+                // Set color analysis
+                document.getElementById('color-analysis').innerHTML = `
+                    Primary color: ${colors[Math.floor(Math.random() * colors.length)]}<br>
+                    Secondary color: ${colors[Math.floor(Math.random() * colors.length)]}<br>
+                    Color consistency: ${Math.random() > 0.3 ? 'Good' : 'Needs Improvement'}
+                `;
+                
+                // Set pattern consistency
+                document.getElementById('pattern-consistency').innerHTML = `
+                    Pattern type: ${patterns[Math.floor(Math.random() * patterns.length)]}<br>
+                    Pattern alignment: ${Math.random() > 0.4 ? 'Proper' : 'Misaligned'}<br>
+                    Repeat consistency: ${Math.random() > 0.5 ? 'Good' : 'Variations Detected'}
+                `;
+                
+                // Set defects list
+                const defectsList = document.getElementById('defects-list');
+                defectsList.innerHTML = '';
+                defects.forEach(defect => {
+                    const defectItem = document.createElement('div');
+                    defectItem.className = 'mb-2';
+                    defectItem.innerHTML = `
+                        <span class="defect-indicator ${defect.severity}"></span>
+                        <strong>${defect.type}</strong> - ${defect.location}<br>
+                        Suggested action: ${getSuggestedAction(defect.type, defect.severity)}
+                    `;
+                    defectsList.appendChild(defectItem);
+                });
+                
+                // Add defect markers to visualization
+                defectVisualization.innerHTML = '';
+                defects.forEach(defect => {
+                    const marker = document.createElement('div');
+                    marker.className = 'defect-marker';
+                    marker.style.left = `${Math.random() * 80 + 10}%`;
+                    marker.style.top = `${Math.random() * 80 + 10}%`;
+                    
+                    if (defect.severity === 'critical') {
+                        marker.style.backgroundColor = 'var(--accent-color)';
+                        marker.style.width = '20px';
+                        marker.style.height = '20px';
+                    } else {
+                        marker.style.backgroundColor = '#f39c12';
+                        marker.style.width = '12px';
+                        marker.style.height = '12px';
+                    }
+                    
+                    defectVisualization.appendChild(marker);
+                });
+                
+                defectVisualization.appendChild(analyzedImage);
+            }
+            
+            // Helper function to get suggested actions
+            function getSuggestedAction(type, severity) {
+                if (severity === 'critical') {
+                    return 'Reject piece and inform supervisor';
+                }
+                
+                switch(type) {
+                    case 'Color Variation':
+                        return 'Adjust dyeing process parameters';
+                    case 'Thread Misalignment':
+                        return 'Check loom alignment';
+                    case 'Small Stain':
+                        return 'Spot cleaning recommended';
+                    case 'Pilling':
+                        return 'Review fabric finishing process';
+                    default:
+                        return 'Quality check recommended';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
